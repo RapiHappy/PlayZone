@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PlayZone — Игровой маркетплейс аккаунтов, доната и ключей</title>
+  
+  <!-- Шрифт Plus Jakarta Sans и FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            zoneDark: '#08090f',
+            zoneCard: '#10121d',
+            zoneCardHover: '#161928',
+            zoneInput: '#171928',
+            zoneBorder: 'rgba(255, 255, 255, 0.08)',
+            zonePrimary: '#6366f1',
+            zoneAccent: '#00f0ff',
+            zoneVerified: '#38bdf8',
+            zoneSuccess: '#10b981',
+            zoneWarning: '#f59e0b',
+            zoneDanger: '#f43f5e'
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Плавная прокрутка и кастомный скроллбар */
+    html {
+      scroll-behavior: smooth;
+    }
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #08090f;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e2238;
+      border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #373d63;
+    }
+
+    .neon-glow-primary {
+      box-shadow: 0 0 20px -3px rgba(99, 102, 241, 0.45);
+    }
+    .neon-glow-accent {
+      box-shadow: 0 0 20px -4px rgba(0, 240, 255, 0.4);
+    }
+    .verified-badge-glow {
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
+    }
+    .glass-nav {
+      background: rgba(13, 15, 25, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+
+<body class="bg-zoneDark text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white antialiased">
+
+  <header class="glass-nav border-b border-zoneBorder sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Логотип -->
+      <a href="javascript:void(0)" onclick="resetAllFilters()" class="flex items-center gap-2.5 group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center text-white text-lg shadow-lg group-hover:scale-105 transition-transform duration-200">
+          <i class="fa-solid fa-gamepad"></i>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-cyan-300 bg-clip-text text-transparent">
+            Play<span class="text-cyan-400">Zone</span>
+          </span>
+          <span class="hidden sm:inline-block ml-1.5 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/80 border border-emerald-500/30 rounded">
+            Market
+          </span>
+        </div>
+      </a>
+
+      <!-- Поисковая строка -->
+      <div class="flex-1 max-w-xl hidden md:block">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Поиск игр, аккаунтов, скинов, доната..." 
+            oninput="handleSearch(this.value)"
+            class="w-full bg-zoneInput/90 border border-zoneBorder hover:border-slate-600 focus:border-zonePrimary rounded-full py-2 pl-11 pr-10 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-zonePrimary/20 transition-all"
+          />
+          <button 
+            id="clearSearchBtn" 
+            onclick="clearSearch()" 
+            class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Действия / Профиль PlayZone -->
+      <div class="flex items-center gap-3">
+        
+        <!-- Кнопка "Мои заказы" -->
+        <button 
+          onclick="openOrdersModal()"
+          class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-zoneCard hover:bg-zoneCardHover border border-zoneBorder transition-all"
+        >
+          <i class="fa-solid fa-bag-shopping text-indigo-400"></i>
+          <span>Сделки</span>
+          <span id="ordersCountBadge" class="bg-indigo-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">0</span>
+        </button>
+
+        <!-- Профиль пользователя PlayZone с галочкой и балансом -->
+        <div 
+          onclick="openWalletModal()" 
+          title="Нажмите для управления балансом" 
+          class="cursor-pointer group flex items-center gap-2.5 bg-zoneCard hover:bg-zoneCardHover border border-zoneBorder hover:border-cyan-500/40 px-3 py-1.5 rounded-full transition-all"
+        >
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white font-extrabold text-xs flex items-center justify-center shadow-md">
+            P
+          </div>
+          <div class="flex flex-col text-left">
+            <div class="flex items-center gap-1.5 leading-none">
+              <span class="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">PlayZone</span>
+              <i class="fa-solid fa-circle-check text-zoneVerified verified-badge-glow text-xs" title="Верифицированный продавец"></i>
+            </div>
+            <span id="headerBalance" class="text-xs font-black text-emerald-400 mt-1">1 000 000 ₽</span>
+          </div>
+          <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 group-hover:text-slate-300 ml-0.5"></i>
+        </div>
+
+        <!-- Кнопка Продать -->
+        <button 
+          onclick="openSellModal()" 
+          class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 via-indigo-600 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white text-xs sm:text-sm font-bold rounded-full neon-glow-primary hover:scale-[1.02] active:scale-[0.98] transition-all"
+        >
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Продать</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Мобильный поиск -->
+    <div class="md:hidden px-4 pb-3">
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input 
+          type="text" 
+          placeholder="Поиск по играм и товарам..." 
+          oninput="handleSearch(this.value)"
+          class="w-full bg-zoneInput border border-zoneBorder rounded-full py-1.5 pl-9 pr-3 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-zonePrimary"
+        />
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full">
+    
+    <!-- Баннер маркетплейса с гарантией сделки -->
+    <section class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-zoneCard border border-indigo-500/20 p-5 sm:p-7 mb-8">
+      <div class="relative z-10 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-3">
+          <i class="fa-solid fa-shield-halved text-cyan-400"></i>
+          Гарант безопасных сделок PlayZone Escrow
+        </div>
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
+          Игровой маркетплейс без посредников и комиссий
+        </h1>
+        <p class="mt-2 text-sm text-slate-300 max-w-xl">
+          Покупайте и продавайте донат, аккаунты, ключи и буст. Деньги резервируются на балансе гаранта и выплачиваются продавцу только после вашей проверки.
+        </p>
+      </div>
+
+      <!-- Фоновые неоновые блики -->
+      <div class="absolute right-0 top-0 -bottom-8 w-96 bg-gradient-to-l from-indigo-600/10 via-cyan-500/10 to-transparent pointer-events-none blur-3xl"></div>
+      <div class="absolute right-8 bottom-3 hidden lg:flex items-center gap-4 text-slate-500/40">
+        <i class="fa-solid fa-dice-d20 text-7xl"></i>
+        <i class="fa-solid fa-shield-halved text-8xl text-indigo-500/20"></i>
+      </div>
+    </section>
+
+    <!-- Популярные игры / Чипсы фильтрации -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <i class="fa-solid fa-fire text-amber-400"></i>
+          Популярные игры и сервисы
+        </h2>
+        <span class="text-xs text-slate-400" id="gamesCountHint">Все направления</span>
+      </div>
+
+      <div class="flex gap-2.5 overflow-x-auto pb-2 hide-scrollbar" id="gameChipsContainer">
+        <!-- Генерируется скриптом -->
+      </div>
+    </div>
+
+    <!-- Панель категорий и расширенных фильтров -->
+    <div class="bg-zoneCard border border-zoneBorder rounded-2xl p-3 sm:p-4 mb-8 shadow-sm">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        
+        <!-- Вкладки категорий -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 hide-scrollbar" id="categoryTabsContainer">
+          <!-- Генерируется скриптом -->
+        </div>
+
+        <!-- Переключатели фильтрации и сортировка -->
+        <div class="flex flex-wrap items-center gap-3 pt-2 lg:pt-0 border-t lg:border-t-0 border-zoneBorder text-xs">
+          
+          <!-- Фильтр: Только автовыдача -->
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl bg-zoneInput border border-zoneBorder hover:border-slate-500 transition-colors">
+            <input type="checkbox" id="filterInstantOnly" onchange="applyFilters()" class="accent-cyan-400 rounded cursor-pointer">
+            <span class="font-medium text-slate-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-bolt text-emerald-400 text-[11px]"></i>
+              Моментально
+            </span>
+          </label>
+
+          <!-- Фильтр: Только проверенные -->
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl bg-zoneInput border border-zoneBorder hover:border-slate-500 transition-colors">
+            <input type="checkbox" id="filterVerifiedOnly" onchange="applyFilters()" class="accent-cyan-400 rounded cursor-pointer">
+            <span class="font-medium text-slate-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-check text-cyan-400 text-[11px]"></i>
+              Проверенные
+            </span>
+          </label>
+
+          <!-- Сортировка -->
+          <div class="relative">
+            <select 
+              id="sortSelect" 
+              onchange="applyFilters()"
+              class="appearance-none bg-zoneInput border border-zoneBorder hover:border-slate-500 text-slate-200 text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 focus:outline-none focus:border-zonePrimary cursor-pointer"
+            >
+              <option value="newest">Сначала новые</option>
+              <option value="price_asc">Сначала дешевле</option>
+              <option value="price_desc">Сначала дороже</option>
+              <option value="rating">По рейтингу продавца</option>
+            </select>
+            <i class="fa-solid fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[10px]"></i>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <h3 class="text-base font-extrabold text-white" id="catalogTitle">Витрина предложений</h3>
+        <span id="activeLotsCount" class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-bold">0 лотов</span>
+      </div>
+
+      <button onclick="openSellModal()" class="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
+        <i class="fa-solid fa-plus"></i>
+        <span>Добавить лот</span>
+      </button>
+    </div>
+
+    <!-- Сетка предложений / Каталог -->
+    <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <!-- Наполняется динамически -->
+    </div>
+
+  </main>
+
+  <!-- Футер -->
+  <footer class="border-t border-zoneBorder bg-zoneCard/50 mt-auto py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+      <div class="flex items-center gap-2">
+        <span class="font-extrabold text-white">PlayZone Market</span>
+        <span>© 2026. Все права защищены.</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="javascript:void(0)" onclick="alertModal('Правила маркетплейса', 'Каждая сделка защищена гарантом Escrow. Средства блокируются до момента подтверждения покупателем.')" class="hover:text-white transition-colors">Правила сервиса</a>
+        <a href="javascript:void(0)" onclick="alertModal('Безопасность', 'Не передавайте пароли вне чата сделки и не соглашайтесь на прямые переводы в сторонние мессенджеры.')" class="hover:text-white transition-colors">Безопасность</a>
+        <a href="javascript:void(0)" onclick="alertModal('Поддержка 24/7', 'Тикет-система активна в любой открытой сделке по кнопке «Открыть спор».')" class="hover:text-white transition-colors">Служба заботы</a>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- МОДАЛКА: Кошелек / Пополнение и вывод (PlayZone) -->
+  <div id="walletModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-zoneCard border border-zoneBorder rounded-2xl w-full max-w-md p-6 relative shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-zoneBorder">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+            <i class="fa-solid fa-wallet"></i>
+          </div>
+          <div>
+            <h4 class="text-base font-bold text-white">Личный кошелек</h4>
+            <span class="text-xs text-slate-400">Владелец: PlayZone</span>
+          </div>
+        </div>
+        <button onclick="closeModal('walletModal')" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="my-5 p-4 rounded-xl bg-zoneInput border border-zoneBorder text-center">
+        <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Доступный баланс</span>
+        <div id="modalWalletBalance" class="text-3xl font-black text-emerald-400 tracking-tight my-1">
+          1 000 000 ₽
+        </div>
+        <span class="text-[11px] text-cyan-400 flex items-center justify-center gap-1">
+          <i class="fa-solid fa-circle-check"></i> Верифицированный статус без лимитов
+        </span>
+      </div>
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="quickTopUp(50000)" class="py-2.5 px-3 rounded-xl bg-zoneCardHover border border-zoneBorder hover:border-emerald-500/40 text-xs font-bold text-emerald-400 transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i> +50 000 ₽
+          </button>
+          <button onclick="quickTopUp(100000)" class="py-2.5 px-3 rounded-xl bg-zoneCardHover border border-zoneBorder hover:border-emerald-500/40 text-xs font-bold text-emerald-400 transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-plus"></i> +100 000 ₽
+          </button>
+        </div>
+
+        <button onclick="resetBalanceDefault()" class="w-full py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs font-semibold transition-all">
+          Сбросить баланс ровно на 1 000 000 ₽
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА: Выставить товар на продажу -->
+  <div id="sellModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-zoneCard border border-zoneBorder rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto relative shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-zoneBorder mb-4">
+        <div>
+          <h4 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-tag text-indigo-400"></i>
+            Новое объявление на витрину
+          </h4>
+          <span class="text-xs text-slate-400">Продавец: <b>PlayZone</b> (верифицирован)</span>
+        </div>
+        <button onclick="closeModal('sellModal')" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="sellProductForm" onsubmit="handleCreateListing(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-300 mb-1.5">Выберите игру или сервис *</label>
+          <select id="formGame" required class="w-full bg-zoneInput border border-zoneBorder focus:border-zonePrimary rounded-xl p-2.5 text-white outline-none">
+            <option value="Roblox">Roblox (Робуксы, Петы, Аккаунты)</option>
+            <option value="Brawl Stars">Brawl Stars (Гемы, Аккаунты, Буст)</option>
+            <option value="Steam">Steam (Ключи, Баланс, Аккаунты)</option>
+            <option value="CS2">CS2 (Скины, Прайм, Ключи кейсов)</option>
+            <option value="Genshin Impact">Genshin Impact (Примогемы, Аккаунты)</option>
+            <option value="Dota 2">Dota 2 (Предметы, Смурфы, Буст)</option>
+            <option value="Telegram">Telegram Stars & Premium</option>
+            <option value="Valorant">Valorant (VP Поинты, Скины)</option>
+            <option value="Minecraft">Minecraft (Лицензии, Плащи)</option>
+            <option value="GTA 5">GTA 5 / GTA Online</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1.5">Категория *</label>
+            <select id="formCategory" required class="w-full bg-zoneInput border border-zoneBorder focus:border-zonePrimary rounded-xl p-2.5 text-white outline-none">
+              <option value="accounts">Аккаунт</option>
+              <option value="currency">Валюта / Донат</option>
+              <option value="keys">Ключ / Гифт</option>
+              <option value="skins">Скин / Предмет</option>
+              <option value="boost">Услуга / Буст</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-300 mb-1.5">Тип передачи *</label>
+            <select id="formDelivery" onchange="toggleSecretField(this.value)" class="w-full bg-zoneInput border border-zoneBorder focus:border-zonePrimary rounded-xl p-2.5 text-white outline-none">
+              <option value="instant">Автовыдача (моментально)</option>
+              <option value="manual">Ручная (в чате сделки)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1.5">Название объявления *</label>
+          <input 
+            type="text" 
+            id="formTitle" 
+            placeholder="например: 1,500 Robux кодом без ожидания" 
+            required 
+            maxlength="80"
+            class="w-full bg-zoneInput border border-zoneBorder focus:border-zonePrimary rounded-xl p-2.5 text-white outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1.5">Подробное описание товара *</label>
+          <textarea 
+            id="formDesc" 
+            rows="3" 
+            placeholder="Опишите регион, привязки, уровень или способ передачи..." 
+            required
+            class="w-full bg-zoneInput border border-zoneBorder focus:border-zonePrimary rounded-xl p-2.5 text-white outline-none"
+          ></textarea>
+        </div>
+
+        <!-- Поле для автовыдачи (логин:пароль или ключ) -->
+        <div id="formSecretBox" class="p-3 bg-indigo-950/20 border border-indigo-500/30 rounded-xl space-y-1.5">
+          <label class="block font-bold text-cyan-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-lock text-xs"></i>
+            Скрытые данные для покупателя (Ключ / Логин:пароль)
+          </label>
+          <input 
+            type="text" 
+            id="formSecret" 
+            placeholder="STEAM-XXXXX-XXXXX или login:pass" 
+            class="w-full bg-zoneInput border border-zoneBorder focus:border-cyan-400 rounded-lg p-2 text-white font-mono outline-none"
+          />
+          <p class="text-[11px] text-slate-400">Гарант PlayZone откроет эту информацию покупателю только после заморозки оплаты.</p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-300 mb-1.5">Цена для покупателя (₽) *</label>
+          <input 
+            type="number" 
+            id="formPrice" 
+            placeholder="450" 
+            min="10" 
+            required 
+            oninput="calcFee(this.value)"
+            class="w-full bg-zoneInput border border-zoneBorder focus:border-zonePrimary rounded-xl p-2.5 text-white font-bold text-sm outline-none"
+          />
+          <div class="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Комиссия сервиса: <b class="text-slate-300">8%</b></span>
+            <span>Вы получите на баланс: <b id="payoutPreview" class="text-emerald-400 font-bold">0 ₽</b></span>
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3 bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-extrabold text-sm rounded-xl neon-glow-primary transition-all"
+        >
+          Опубликовать на витрине
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА: Комната сделки (Escrow / Покупка и передача) -->
+  <div id="dealModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-zoneCard border border-zoneBorder rounded-2xl w-full max-w-lg p-6 max-h-[92vh] overflow-y-auto relative shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-zoneBorder mb-4">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <h4 class="text-base font-bold text-white" id="dealModalHeading">Безопасная сделка (Escrow)</h4>
+        </div>
+        <button onclick="closeModal('dealModal')" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="dealModalBody" class="space-y-4 text-xs">
+        <!-- Генерируется скриптом -->
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА: Мои заказы / История -->
+  <div id="ordersModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-zoneCard border border-zoneBorder rounded-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto relative shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-zoneBorder mb-4">
+        <h4 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i>
+          История ваших сделок
+        </h4>
+        <button onclick="closeModal('ordersModal')" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="ordersList" class="space-y-3 text-xs">
+        <!-- Генерируется скриптом -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Уведомления Toast -->
+  <div id="toastNotification" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 border border-cyan-500/40 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3">
+      <i id="toastIcon" class="fa-solid fa-circle-check text-cyan-400 text-base"></i>
+      <span id="toastMessage" class="text-xs font-semibold">Успешно!</span>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // 1. ИНИЦИАЛИЗАЦИЯ И ДАННЫЕ
+    // -------------------------------------------------------------
+    const GAMES_LIST = [
+      { id: 'all', name: 'Все игры', icon: 'fa-solid fa-gamepad' },
+      { id: 'Roblox', name: 'Roblox', icon: 'fa-solid fa-cube' },
+      { id: 'Brawl Stars', name: 'Brawl Stars', icon: 'fa-solid fa-skull' },
+      { id: 'Steam', name: 'Steam', icon: 'fa-brands fa-steam' },
+      { id: 'CS2', name: 'CS2', icon: 'fa-solid fa-gun' },
+      { id: 'Genshin Impact', name: 'Genshin', icon: 'fa-solid fa-sparkles' },
+      { id: 'Dota 2', name: 'Dota 2', icon: 'fa-solid fa-shield' },
+      { id: 'Telegram', name: 'Telegram Stars', icon: 'fa-brands fa-telegram' },
+      { id: 'Valorant', name: 'Valorant', icon: 'fa-solid fa-crosshairs' },
+      { id: 'Minecraft', name: 'Minecraft', icon: 'fa-solid fa-cubes' }
+    ];
+
+    const CATEGORIES = [
+      { id: 'all', name: 'Все товары' },
+      { id: 'accounts', name: 'Аккаунты' },
+      { id: 'currency', name: 'Валюта / Донат' },
+      { id: 'keys', name: 'Ключи и гифты' },
+      { id: 'skins', name: 'Скины' },
+      { id: 'boost', name: 'Буст и услуги' }
+    ];
+
+    // Пользователь: Ник PlayZone, галочка, 1 000 000 ₽
+    let userProfile = {
+      username: 'PlayZone',
+      balance: 1000000,
+      isVerified: true,
+      rating: 5.0,
+      salesCompleted: 1420
+    };
+
+    // Каталог пустой по умолчанию, сохраняется в LocalStorage
+    let products = JSON.parse(localStorage.getItem('playzone_catalog_v4')) || [];
+    let myOrders = JSON.parse(localStorage.getItem('playzone_orders_v4')) || [];
+
+    // Сохраненный баланс
+    const savedBalance = localStorage.getItem('playzone_user_balance');
+    if (savedBalance !== null) {
+      userProfile.balance = parseInt(savedBalance, 10);
+    } else {
+      localStorage.setItem('playzone_user_balance', userProfile.balance);
+    }
+
+    let activeGame = 'all';
+    let activeCategory = 'all';
+    let searchQuery = '';
+
+    // -------------------------------------------------------------
+    // 2. ЗАПУСК И ОТРИСОВКА ИНТЕРФЕЙСА
+    // -------------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', () => {
+      renderGameChips();
+      renderCategoryTabs();
+      updateBalanceUI();
+      updateOrdersBadge();
+      renderCatalog();
+    });
+
+    function updateBalanceUI() {
+      const formatted = userProfile.balance.toLocaleString('ru-RU') + ' ₽';
+      document.getElementById('headerBalance').innerText = formatted;
+      document.getElementById('modalWalletBalance').innerText = formatted;
+      localStorage.setItem('playzone_user_balance', userProfile.balance);
+    }
+
+    function updateOrdersBadge() {
+      document.getElementById('ordersCountBadge').innerText = myOrders.length;
+    }
+
+    // Рендер карусели игр
+    function renderGameChips() {
+      const container = document.getElementById('gameChipsContainer');
+      container.innerHTML = GAMES_LIST.map(game => `
+        <button 
+          onclick="selectGame('${game.id}', this)"
+          class="game-chip flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
+            activeGame === game.id 
+              ? 'bg-indigo-600 border-indigo-500 text-white shadow-md' 
+              : 'bg-zoneCard hover:bg-zoneCardHover border-zoneBorder text-slate-300'
+          }"
+        >
+          <i class="${game.icon}"></i>
+          <span>${game.name}</span>
+        </button>
+      `).join('');
+    }
+
+    // Рендер категорий
+    function renderCategoryTabs() {
+      const container = document.getElementById('categoryTabsContainer');
+      container.innerHTML = CATEGORIES.map(cat => `
+        <button 
+          onclick="selectCategory('${cat.id}', this)"
+          class="cat-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+            activeCategory === cat.id 
+              ? 'bg-zoneInput text-cyan-300 font-bold border border-cyan-500/40' 
+              : 'text-slate-400 hover:text-white'
+          }"
+        >
+          ${cat.name}
+        </button>
+      `).join('');
+    }
+
+    // -------------------------------------------------------------
+    // 3. ФИЛЬТРАЦИЯ И ВИТРИНА ТОВАРОВ
+    // -------------------------------------------------------------
+    function selectGame(gameId, btn) {
+      activeGame = gameId;
+      document.querySelectorAll('.game-chip').forEach(el => {
+        el.className = el.className.replace('bg-indigo-600 border-indigo-500 text-white shadow-md', 'bg-zoneCard hover:bg-zoneCardHover border-zoneBorder text-slate-300');
+      });
+      btn.className = 'game-chip flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border bg-indigo-600 border-indigo-500 text-white shadow-md';
+      
+      const found = GAMES_LIST.find(g => g.id === gameId);
+      document.getElementById('gamesCountHint').innerText = found ? found.name : 'Все направления';
+      renderCatalog();
+    }
+
+    function selectCategory(catId, btn) {
+      activeCategory = catId;
+      document.querySelectorAll('.cat-tab').forEach(el => {
+        el.className = 'cat-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all text-slate-400 hover:text-white';
+      });
+      btn.className = 'cat-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all bg-zoneInput text-cyan-300 font-bold border border-cyan-500/40';
+      renderCatalog();
+    }
+
+    function handleSearch(val) {
+      searchQuery = val.trim().toLowerCase();
+      document.getElementById('clearSearchBtn').classList.toggle('hidden', searchQuery.length === 0);
+      renderCatalog();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      searchQuery = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderCatalog();
+    }
+
+    function resetAllFilters() {
+      activeGame = 'all';
+      activeCategory = 'all';
+      searchQuery = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterInstantOnly').checked = false;
+      document.getElementById('filterVerifiedOnly').checked = false;
+      document.getElementById('sortSelect').value = 'newest';
+      renderGameChips();
+      renderCategoryTabs();
+      renderCatalog();
+    }
+
+    function applyFilters() {
+      renderCatalog();
+    }
+
+    function renderCatalog() {
+      const grid = document.getElementById('productsGrid');
+      const instantOnly = document.getElementById('filterInstantOnly')?.checked || false;
+      const verifiedOnly = document.getElementById('filterVerifiedOnly')?.checked || false;
+      const sortVal = document.getElementById('sortSelect')?.value || 'newest';
+
+      let list = products.filter(item => {
+        const matchesGame = activeGame === 'all' || item.game.toLowerCase() === activeGame.toLowerCase();
+        const matchesCat = activeCategory === 'all' || item.category === activeCategory;
+        const matchesSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery) || item.game.toLowerCase().includes(searchQuery) || item.desc.toLowerCase().includes(searchQuery);
+        const matchesInstant = !instantOnly || item.delivery === 'instant';
+        const matchesVerified = !verifiedOnly || item.isVerified === true;
+        return matchesGame && matchesCat && matchesSearch && matchesInstant && matchesVerified;
+      });
+
+      // Сортировка
+      if (sortVal === 'price_asc') {
+        list.sort((a, b) => a.price - b.price);
+      } else if (sortVal === 'price_desc') {
+        list.sort((a, b) => b.price - a.price);
+      } else if (sortVal === 'rating') {
+        list.sort((a, b) => b.sellerRating - a.sellerRating);
+      } else {
+        list.sort((a, b) => b.createdAt - a.createdAt);
+      }
+
+      document.getElementById('activeLotsCount').innerText = `${list.length} лотов`;
+
+      // Если товаров нет — красивый Empty State
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full bg-zoneCard/70 border border-dashed border-zoneBorder rounded-2xl p-12 text-center my-4">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-cyan-400 flex items-center justify-center text-2xl mx-auto mb-4 shadow-inner">
+              <i class="fa-solid fa-box-open"></i>
+            </div>
+            <h4 class="text-lg font-bold text-white mb-1.5">В каталоге пока нет предложений</h4>
+            <p class="text-xs text-slate-400 max-w-md mx-auto mb-5 leading-relaxed">
+              Вы вошли под верифицированным аккаунтом <b class="text-white">PlayZone</b> с балансом 1 000 000 ₽. Выставите первый игровой лот на витрину!
+            </p>
+            <button 
+              onclick="openSellModal()" 
+              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-bold text-xs neon-glow-primary hover:scale-105 transition-all"
+            >
+              <i class="fa-solid fa-plus"></i>
+              <span>Выставить лот на продажу</span>
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      // Генерация карточек
+      grid.innerHTML = list.map(item => `
+        <div class="group bg-zoneCard hover:bg-zoneCardHover border border-zoneBorder hover:border-indigo-500/40 rounded-2xl p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 shadow-sm">
+          <div>
+            <!-- Верхняя строка карточки -->
+            <div class="flex items-center justify-between gap-2 mb-2.5">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-cyan-400 bg-cyan-950/40 border border-cyan-500/20 px-2 py-0.5 rounded-md">
+                ${item.game}
+              </span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                item.delivery === 'instant' 
+                  ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-500/30' 
+                  : 'bg-amber-950/50 text-amber-400 border border-amber-500/30'
+              }">
+                <i class="${item.delivery === 'instant' ? 'fa-solid fa-bolt' : 'fa-solid fa-handshake'} text-[9px]"></i>
+                ${item.delivery === 'instant' ? 'Моментально' : 'Ручная'}
+              </span>
+            </div>
+
+            <!-- Заголовок и описание -->
+            <h4 class="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-2 leading-snug mb-1.5">
+              ${escapeHtml(item.title)}
+            </h4>
+            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">
+              ${escapeHtml(item.desc)}
+            </p>
+          </div>
+
+          <!-- Нижняя часть: Продавец и кнопка покупки -->
+          <div class="pt-3 border-t border-zoneBorder/60">
+            <div class="flex items-center justify-between mb-3 text-xs">
+              <div class="flex items-center gap-1.5">
+                <div class="w-5 h-5 rounded-full bg-gradient-to-tr from-cyan-400 to-indigo-600 text-[10px] font-bold text-white flex items-center justify-center">
+                  ${item.seller[0].toUpperCase()}
+                </div>
+                <span class="font-bold text-slate-300">${escapeHtml(item.seller)}</span>
+                ${item.isVerified ? '<i class="fa-solid fa-circle-check text-zoneVerified verified-badge-glow text-[11px]" title="Проверен"></i>' : ''}
+              </div>
+
+              <div class="flex items-center gap-1 text-amber-400 font-bold text-xs">
+                <i class="fa-solid fa-star text-[10px]"></i>
+                <span>${item.sellerRating.toFixed(1)}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-base font-black text-white">
+                ${item.price.toLocaleString('ru-RU')} ₽
+              </div>
+              <button 
+                onclick="openBuyFlow('${item.id}')"
+                class="px-3.5 py-1.5 rounded-xl bg-zonePrimary hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+              >
+                <span>Купить</span>
+                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // -------------------------------------------------------------
+    // 4. СОЗДАНИЕ ОБЪЯВЛЕНИЯ
+    // -------------------------------------------------------------
+    function openSellModal() {
+      document.getElementById('sellModal').classList.remove('hidden');
+      document.getElementById('sellModal').classList.add('flex');
+    }
+
+    function toggleSecretField(deliveryType) {
+      const box = document.getElementById('formSecretBox');
+      box.style.display = deliveryType === 'instant' ? 'block' : 'none';
+    }
+
+    function calcFee(priceVal) {
+      const p = parseInt(priceVal, 10) || 0;
+      const payout = Math.max(0, Math.round(p * 0.92));
+      document.getElementById('payoutPreview').innerText = payout.toLocaleString('ru-RU') + ' ₽';
+    }
+
+    function handleCreateListing(e) {
+      e.preventDefault();
+
+      const game = document.getElementById('formGame').value;
+      const cat = document.getElementById('formCategory').value;
+      const title = document.getElementById('formTitle').value.trim();
+      const desc = document.getElementById('formDesc').value.trim();
+      const delivery = document.getElementById('formDelivery').value;
+      const secret = document.getElementById('formSecret').value.trim() || 'Данные будут выданы продавцом PlayZone в чате сделки.';
+      const price = parseInt(document.getElementById('formPrice').value, 10);
+
+      const newProduct = {
+        id: 'pz_' + Date.now(),
+        game: game,
+        category: cat,
+        title: title,
+        desc: desc,
+        delivery: delivery,
+        secret: secret,
+        price: price,
+        seller: userProfile.username,
+        isVerified: userProfile.isVerified,
+        sellerRating: userProfile.rating,
+        createdAt: Date.now()
+      };
+
+      products.unshift(newProduct);
+      localStorage.setItem('playzone_catalog_v4', JSON.stringify(products));
+
+      closeModal('sellModal');
+      document.getElementById('sellProductForm').reset();
+      document.getElementById('payoutPreview').innerText = '0 ₽';
+
+      renderCatalog();
+      showToast('Объявление опубликовано на витрине маркетплейса!');
+    }
+
+    // -------------------------------------------------------------
+    // 5. БЕЗОПАСНАЯ СДЕЛКА (ESCROW) И КОМНАТА ЗАКАЗА
+    // -------------------------------------------------------------
+    function openBuyFlow(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+
+      const body = document.getElementById('dealModalBody');
+      document.getElementById('dealModalHeading').innerText = 'Оформление покупки (Гарант)';
+
+      body.innerHTML = `
+        <div class="p-4 rounded-xl bg-zoneInput border border-zoneBorder space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase text-cyan-400">${product.game}</span>
+            <span class="text-xs text-slate-400">Продавец: <b class="text-white">${escapeHtml(product.seller)}</b></span>
+          </div>
+          <h5 class="text-sm font-bold text-white">${escapeHtml(product.title)}</h5>
+          <p class="text-xs text-slate-400 leading-relaxed">${escapeHtml(product.desc)}</p>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-center gap-3">
+          <i class="fa-solid fa-shield-halved text-emerald-400 text-xl"></i>
+          <div>
+            <div class="font-bold text-emerald-300">Гарантия безопасности сделки</div>
+            <div class="text-[11px] text-slate-300">Деньги не поступят продавцу, пока вы лично не подтвердите успешное получение.</div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between p-3 rounded-xl bg-zoneCard border border-zoneBorder text-sm font-bold">
+          <span class="text-slate-300">Сумма к списанию:</span>
+          <span class="text-lg font-black text-white">${product.price.toLocaleString('ru-RU')} ₽</span>
+        </div>
+
+        <div class="text-[11px] text-slate-400 text-center">
+          Баланс кошелька: <b class="text-emerald-400">${userProfile.balance.toLocaleString('ru-RU')} ₽</b>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button 
+            onclick="confirmDealPayment('${product.id}')"
+            class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg transition-all"
+          >
+            Оплатить через Гарант
+          </button>
+          <button 
+            onclick="closeModal('dealModal')"
+            class="py-2.5 rounded-xl bg-zoneInput hover:bg-zoneCardHover border border-zoneBorder text-slate-300 font-bold text-xs"
+          >
+            Отмена
+          </button>
+        </div>
+      `;
+
+      document.getElementById('dealModal').classList.remove('hidden');
+      document.getElementById('dealModal').classList.add('flex');
+    }
+
+    function confirmDealPayment(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+
+      if (userProfile.balance < product.price) {
+        alertModal('Недостаточно средств', 'На вашем балансе недостаточно средств. Вы можете бесплатно пополнить баланс в меню кошелька!');
+        return;
+      }
+
+      // Списание с баланса 1 000 000 ₽
+      userProfile.balance -= product.price;
+      updateBalanceUI();
+
+      // Создание активного заказа
+      const order = {
+        orderId: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
+        productId: product.id,
+        title: product.title,
+        game: product.game,
+        price: product.price,
+        secret: product.secret,
+        seller: product.seller,
+        date: new Date().toLocaleString('ru-RU'),
+        status: 'active'
+      };
+
+      myOrders.unshift(order);
+      localStorage.setItem('playzone_orders_v4', JSON.stringify(myOrders));
+      updateOrdersBadge();
+
+      // Открытие экрана живой сделки
+      renderDealRoom(order, product);
+      showToast('Оплата заморожена Гарантом PlayZone!');
+    }
+
+    function renderDealRoom(order, product) {
+      document.getElementById('dealModalHeading').innerText = `Сделка ${order.orderId} (В процессе)`;
+
+      const body = document.getElementById('dealModalBody');
+      body.innerHTML = `
+        <div class="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 text-emerald-400 font-bold">
+            <i class="fa-solid fa-lock"></i> Средства удержаны гарантом
+          </div>
+          <span class="text-slate-400 font-mono">${order.orderId}</span>
+        </div>
+
+        <div class="p-3.5 bg-zoneInput border border-zoneBorder rounded-xl space-y-1.5">
+          <div class="text-[11px] font-bold text-cyan-400">Данные товара / Ключ доступа:</div>
+          <div class="bg-black/70 border border-dashed border-cyan-500/50 p-2.5 rounded-lg text-cyan-300 font-mono text-xs select-all break-all">
+            ${escapeHtml(order.secret)}
+          </div>
+          <p class="text-[10px] text-slate-400">Скопируйте полученные данные и проверьте их работоспособность.</p>
+        </div>
+
+        <!-- Симулированный чат сделки -->
+        <div class="border border-zoneBorder rounded-xl overflow-hidden bg-zoneCard">
+          <div class="px-3 py-2 bg-zoneInput border-b border-zoneBorder text-[11px] font-bold text-slate-300 flex items-center justify-between">
+            <span>Чат с продавцом (${escapeHtml(order.seller)})</span>
+            <span class="text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> онлайн</span>
+          </div>
+          <div id="chatMessages" class="p-3 space-y-2 max-h-36 overflow-y-auto text-xs">
+            <div class="p-2 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-slate-200">
+              <b class="text-cyan-300">Гарант PlayZone:</b> Заказ оплачен. Товар передан покупателю. Если всё сходится, нажмите подтверждение.
+            </div>
+            <div class="p-2 rounded-lg bg-zoneInput border border-zoneBorder text-slate-200">
+              <b class="text-indigo-400">${escapeHtml(order.seller)}:</b> Здравствуйте! Товар выдан в окно сделки выше. Приятной игры!
+            </div>
+          </div>
+        </div>
+
+        <!-- Кнопки завершения -->
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button 
+            onclick="completeEscrowOrder('${order.orderId}', '${product ? product.id : ''}')"
+            class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
+          >
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Подтвердить получение</span>
+          </button>
+
+          <button 
+            onclick="disputeEscrowOrder('${order.orderId}')"
+            class="py-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 font-bold text-xs transition-all flex items-center justify-center gap-1.5"
+          >
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Открыть спор</span>
+          </button>
+        </div>
+      `;
+    }
+
+    function completeEscrowOrder(orderId, productId) {
+      const order = myOrders.find(o => o.orderId === orderId);
+      if (order) {
+        order.status = 'completed';
+        localStorage.setItem('playzone_orders_v4', JSON.stringify(myOrders));
+      }
+
+      // Удаляем купленный товар из витрины
+      if (productId) {
+        products = products.filter(p => p.id !== productId);
+        localStorage.setItem('playzone_catalog_v4', JSON.stringify(products));
+        renderCatalog();
+      }
+
+      closeModal('dealModal');
+      showToast('Сделка успешно завершена! Спасибо за покупку.');
+    }
+
+    function disputeEscrowOrder(orderId) {
+      const order = myOrders.find(o => o.orderId === orderId);
+      if (order) {
+        order.status = 'disputed';
+        localStorage.setItem('playzone_orders_v4', JSON.stringify(myOrders));
+      }
+
+      closeModal('dealModal');
+      alertModal('Спор открыт', `Модератор-арбитр подключился к проверке заказа ${orderId}. Деньги заморожены на балансе до вердикта.`);
+    }
+
+    // -------------------------------------------------------------
+    // 6. МОИ ЗАКАЗЫ
+    // -------------------------------------------------------------
+    function openOrdersModal() {
+      const listContainer = document.getElementById('ordersList');
+      if (myOrders.length === 0) {
+        listContainer.innerHTML = `
+          <div class="text-center py-8 text-slate-400">
+            <i class="fa-solid fa-receipt text-3xl mb-2 text-slate-600"></i>
+            <div>У вас пока нет оформленных заказов.</div>
+          </div>
+        `;
+      } else {
+        listContainer.innerHTML = myOrders.map(ord => `
+          <div class="p-3 bg-zoneInput border border-zoneBorder rounded-xl flex items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-bold text-white text-xs">${ord.orderId}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                  ord.status === 'completed' 
+                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' 
+                    : ord.status === 'disputed'
+                    ? 'bg-rose-950 text-rose-400 border border-rose-500/30'
+                    : 'bg-indigo-950 text-cyan-400 border border-cyan-500/30'
+                }">
+                  ${ord.status === 'completed' ? 'Завершен' : ord.status === 'disputed' ? 'Спор' : 'Активен'}
+                </span>
+              </div>
+              <div class="text-xs text-slate-300 font-semibold line-clamp-1">${escapeHtml(ord.title)}</div>
+              <div class="text-[10px] text-slate-400">${ord.date}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-black text-white text-sm">${ord.price.toLocaleString('ru-RU')} ₽</div>
+              <div class="text-[10px] font-mono text-cyan-400 select-all">${escapeHtml(ord.secret.slice(0, 14))}...</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('ordersModal').classList.remove('hidden');
+      document.getElementById('ordersModal').classList.add('flex');
+    }
+
+    // -------------------------------------------------------------
+    // 7. КОШЕЛЕК
+    // -------------------------------------------------------------
+    function openWalletModal() {
+      document.getElementById('walletModal').classList.remove('hidden');
+      document.getElementById('walletModal').classList.add('flex');
+    }
+
+    function quickTopUp(amount) {
+      userProfile.balance += amount;
+      updateBalanceUI();
+      showToast(`Баланс пополнен на +${amount.toLocaleString('ru-RU')} ₽`);
+    }
+
+    function resetBalanceDefault() {
+      userProfile.balance = 1000000;
+      updateBalanceUI();
+      showToast('Баланс успешно установлен на 1 000 000 ₽');
+    }
+
+    // -------------------------------------------------------------
+    // 8. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+    // -------------------------------------------------------------
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+      document.getElementById(modalId).classList.remove('flex');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    function alertModal(title, text) {
+      const modal = document.getElementById('dealModal');
+      document.getElementById('dealModalHeading').innerText = title;
+      document.getElementById('dealModalBody').innerHTML = `
+        <div class="p-4 bg-zoneInput border border-zoneBorder rounded-xl text-slate-300 text-xs leading-relaxed">
+          ${escapeHtml(text)}
+        </div>
+        <button onclick="closeModal('dealModal')" class="w-full py-2.5 rounded-xl bg-zonePrimary text-white font-bold text-xs mt-2">
+          Понятно
+        </button>
+      `;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[m]));
+    }
+  </script>
+</body>
+</html>
